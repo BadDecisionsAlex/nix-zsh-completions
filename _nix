@@ -34,11 +34,22 @@ function _extract_options {
     _describe -t commands "Option" commands
 }
 
+function _extract_value_description {
+    # set -x
+    local OPTION=$words[$(($CURRENT - 1))]
+    local description=$(nix --help-config | sed -E \
+                                                -e /\^\ \ ${OPTION}/\!d \
+                                                -e "s=  ${OPTION} +=="
+          )
+    print $description >> ~/log/nix
+    _message $description
+}
+
 local -a common_flags
 common_flags=("(--debug)"--debug"[enable debug output]"
               "(-h --help)"{-h,--help}"[show usage information]"
               "(--help-config)"--help-config"[show configuration options]"
-              "(--option)"--option"[set a Nix configuration option (overriding nix.conf)]:Option:_extract_options:Value"
+              "(--option)"--option"[set a Nix configuration option (overriding nix.conf)]:Option:_extract_options:Value:_extract_value_description"
               "(--quiet)"--quiet"[decrease verbosity level]"
               "(-v --verbose)"{-v,--verbose}"[increase verbosity level]"
               "(--version)"--version"[show version information]"
