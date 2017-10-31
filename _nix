@@ -1,37 +1,43 @@
 #compdef nix
 #autoload
 
-_nix-common-options
-
 local command_name=nix
 
-function extract_commands {
-    local OLDIFS=$IFS
-    IFS='
-'
-    local -a commands
-    commands=($(nix --help | sed -E \
-                     -e '/^Available commands/,/^$/!d' \
-                     -e '/^Available commands/d' \
-                     -e '/^$/d' \
-                     -e 's=^ +([0-9a-z-]*) +(.*)$=\1:\2='
-              ))
-    IFS=$OLDIFS
-    _describe -t commands "Command" commands
+_nix-common-options
+
+# print $command_lookup >> ~/log/nix
+
+local -a main_commands
+() {
+    local IFS=$'\n'
+    main_commands=($(nix --help | sed -E \
+                                      -e '/^Available commands/,/^$/!d' \
+                                      -e '/^Available commands/d' \
+                                      -e '/^$/d' \
+                                      -e 's=^ +([0-9a-z-]*) +(.*)$=\1:\2='
+                   ))
 }
 
+function _describe_commands {
+    _describe -t main_commands "Command" main_commands
+}
+
+local -A command_lookup
+for command_description in $main_commands; {
+    local command=${command_description%%\:*}
+    command_lookup[$command]=1
+}
+
+
 function _extract_options {
-    local OLDIFS=$IFS
-    IFS='
-'
-    local -a commands
-    commands=($(nix --help-config | sed -E \
+    local IFS=$'\n'
+    local -a main_commands
+    main_commands=($(nix --help-config | sed -E \
                                  -e '/^$/,/^$/!d' \
                                  -e '/^$/d' \
                                  -e 's=^ +([0-9a-z-]*) +(.*)$=\1:\2='
               ))
-    IFS=$OLDIFS
-    _describe -t commands "Option" commands
+    _describe -t main_commands "Option" main_commands
 }
 
 function _extract_value_description {
@@ -71,9 +77,39 @@ function extract_flags {
                         -e 's=^ +(-[0-9a-zA-Z-]*),? ?(--[0-9a-z-]*)? (<[A-Z]+>)? ?(<[A-Z]+>)? +(.*$)=\1 \2 .\3. .\4. "\5"='
 }
 
-_arguments -s \
-           :'Command':extract_commands \
-           "*:Installables: _nix_attr_paths"\
-           $common_flags \
+local -A COMPLETORS
+# The different argument completors that can be used
+COMPLETORS[INSTALLABLES]="*:Installables: _nix_attr_paths"
+COMPLETORS[INSTALLABLE]=":Installable: _nix_attr_paths"
+COMPLETORS[PATH]=":Path:_files"
+COMPLETORS[PATHS]="*:Path:_files"
+COMPLETORS[NAR]=":Nar:_files"
 
+local -a command_flags
+local -a command_arguments=()
+for word in $words; do
+
+    if [[ $command_lookup[$word] == "1" ]]; then
+        # Extract an array like eg. (NAR PATH) or (INSTALLABLES)
+        local -a args=($(nix $word --help | sed -E \
+                                          -e '2,$d' \
+                                          -e 's=\.\.\.==g' \
+                                          -e 's=^Usage.*<FLAGS>==' \
+                                          -e 's=<|>==g'
+        ))
+        # And add the corresponding completor
+        for arg in $args; do
+            command_arguments+=($COMPLETORS[$arg])
+        done
+        break
+    fi
+done
+
+print $command_arguments >> ~/log/nix
+
+_arguments -s \
+           :'Command':_describe_commands \
+           $command_arguments \
+           $common_flags \
+           # $command_flags
 
