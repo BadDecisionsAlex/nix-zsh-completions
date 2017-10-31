@@ -1,0 +1,36 @@
+#compdef nix
+#autoload
+
+function extract_commands {
+    local OLDIFS=$IFS
+    IFS='
+'
+    local -a commands
+    commands=($(nix --help | sed -E \
+                     -e '/^Available commands/,/^$/!d' \
+                     -e '/^Available commands/d' \
+                     -e '/^$/d' \
+                     -e 's=^ +([0-9a-z-]*) +(.*)$=\1:\2='
+              ))
+    IFS=$OLDIFS
+    _describe -t commands "Command" commands
+}
+
+function extract_common_flags {
+    nix --help | sed -E \
+                        -e "/^Common flags:/,/^$/\!d" \
+                        -e "/^Common flags:/d" \
+                        -e '/^$/d' \
+                        -e 's=^ +(-[0-9a-zA-Z-]*),? ?(--[0-9a-z-]*)? (<[A-Z]+>)? ?(<[A-Z]+>)? +(.*$)=\1 \2 .\3. .\4. "\5"='
+}
+
+function extract_flags {
+    nix $1 --help | sed -E \
+                        -e "/^Flags:/,/^$/\!d" \
+                        -e "/^Flags:/d" \
+                        -e '/^$/d' \
+                        -e 's=^ +(-[0-9a-zA-Z-]*),? ?(--[0-9a-z-]*)? (<[A-Z]+>)? ?(<[A-Z]+>)? +(.*$)=\1 \2 .\3. .\4. "\5"='
+}
+
+_arguments -s \
+           :'Command':extract_commands
