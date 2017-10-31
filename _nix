@@ -76,8 +76,14 @@ COMPLETORS[INSTALLABLE]=":Installable: _nix_attr_paths"
 COMPLETORS[PATH]=":Path:_files"
 COMPLETORS[PATHS]="*:Path:_files"
 COMPLETORS[NAR]=":Nar:_files"
+# Completors that are used for options
+COMPLETORS[NAME]=":Environment Variable:_env"
+COMPLETORS[STORE-URI]=":Store uri:_files"
+COMPLETORS[FILE]=":Path:_files"
+COMPLETORS[COMMAND]=":Path:_command_names"
+COMPLETORS[ARGS]=":Argument to command: "
 
-local -a command_flags
+local -a command_flags=()
 local -a command_arguments=()
 for word in $words; do
 
@@ -93,6 +99,52 @@ for word in $words; do
         for arg in $args; do
             command_arguments+=($COMPLETORS[$arg])
         done
+
+        # Extract the flag completions
+        local -a flag_descriptions
+        (){
+            local IFS=$'\n'
+            flag_descriptions=($(nix $word --help | sed -E \
+                                                        -e '/^Flags:/,/^$/!d' \
+                                                        -e "/^Flags:/d" \
+                                                        -e '/^$/d' \
+                               ))
+        }
+
+        for flag_description in $flag_descriptions; do
+            local -a nix_flag=()
+            local -a flag_args=()
+            # local description
+            nix_flag=($(print -- $flag_description | sed -E \
+                                                      -e 's=  (-[a-zA-Z-]+)(, (--[a-zA-Z0-9-]+))?.*$=\1 \3='))
+            print flags >> ~/log/nix
+            print -l -- $nix_flag >> ~/log/nix
+
+            flag_args=($(print -- $flag_description | sed -E \
+                                                       -e 's=^[^<]+<=<=' \
+                                                       -e 's=>[^>]+$=>=' \
+                                                       -e 's=<|>==g'
+                       ))
+
+            description=$(print -- $flag_description | sed -E \
+                                                           -e 's=.*  ([a-zA-Z].*)$=\1='
+                       )
+            print -- description >> ~/log/nix
+            print -- $description >> ~/log/nix
+
+            print flag args >> ~/log/nix
+            print -l -- $flag_args >> ~/log/nix
+
+            local ACTIONS=""
+            for arg in $flag_args; do
+                ACTIONS+=$COMPLETORS[$arg]
+            done
+
+            for flag in $nix_flag; do
+                command_flags+=("($nix_flag)"$flag"[$description]"$ACTIONS)
+            done
+        done
+
         break
     fi
 done
@@ -103,5 +155,4 @@ _arguments -s \
            :'Command':_describe_commands \
            $command_arguments \
            $common_flags \
-           # $command_flags
-
+           $command_flags
