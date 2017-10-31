@@ -104,6 +104,8 @@ _nix_attr_names () {
         defexpr="import $defexpr_path"
     elif [[ $command_name == nix-env ]]; then
         defexpr=$(_nix_gen_defexpr ~/.nix-defexpr)
+    elif [[ $command_name == nix ]]; then
+        defexpr=$(_nix_gen_defexpr $(nix eval '(<nixpkgs>)'))
     fi
 
     nix-instantiate --eval - \
@@ -136,6 +138,11 @@ _nix_attr_paths () {
     local defexpr_path=$1
     if [[ -z $defexpr_path ]]; then
         if [[ $command_name == nix-env ]]; then
+            defexpr_path=$opt_args[-f]
+            if [[ -z $defexpr_path ]]; then
+                defexpr_path=$opt_args[--file]
+            fi
+        elif [[ $command_name == nix ]]; then
             defexpr_path=$opt_args[-f]
             if [[ -z $defexpr_path ]]; then
                 defexpr_path=$opt_args[--file]

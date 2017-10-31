@@ -1,6 +1,10 @@
 #compdef nix
 #autoload
 
+_nix-common-options
+
+local command_name=nix
+
 function extract_commands {
     local OLDIFS=$IFS
     IFS='
@@ -58,4 +62,7 @@ function extract_flags {
 
 _arguments -s \
            :'Command':extract_commands \
-           $common_flags
+           "*:Installables: _nix_attr_paths"\
+           $common_flags \
+
+
