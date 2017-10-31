@@ -69,14 +69,6 @@ function extract_common_flags {
                         -e 's=^ +(-[0-9a-zA-Z-]*),? ?(--[0-9a-z-]*)? (<[A-Z]+>)? ?(<[A-Z]+>)? +(.*$)=\1 \2 .\3. .\4. "\5"='
 }
 
-function extract_flags {
-    nix $1 --help | sed -E \
-                        -e "/^Flags:/,/^$/\!d" \
-                        -e "/^Flags:/d" \
-                        -e '/^$/d' \
-                        -e 's=^ +(-[0-9a-zA-Z-]*),? ?(--[0-9a-z-]*)? (<[A-Z]+>)? ?(<[A-Z]+>)? +(.*$)=\1 \2 .\3. .\4. "\5"='
-}
-
 local -A COMPLETORS
 # The different argument completors that can be used
 COMPLETORS[INSTALLABLES]="*:Installables: _nix_attr_paths"
