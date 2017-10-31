@@ -16,6 +16,30 @@ function extract_commands {
     _describe -t commands "Command" commands
 }
 
+function _extract_options {
+    local OLDIFS=$IFS
+    IFS='
+'
+    local -a commands
+    commands=($(nix --help-config | sed -E \
+                                 -e '/^$/,/^$/!d' \
+                                 -e '/^$/d' \
+                                 -e 's=^ +([0-9a-z-]*) +(.*)$=\1:\2='
+              ))
+    IFS=$OLDIFS
+    _describe -t commands "Option" commands
+}
+
+local -a common_flags
+common_flags=("(--debug)"--debug"[enable debug output]"
+              "(-h --help)"{-h,--help}"[show usage information]"
+              "(--help-config)"--help-config"[show configuration options]"
+              "(--option)"--option"[set a Nix configuration option (overriding nix.conf)]:Option:_extract_options:Value"
+              "(--quiet)"--quiet"[decrease verbosity level]"
+              "(-v --verbose)"{-v,--verbose}"[increase verbosity level]"
+              "(--version)"--version"[show version information]"
+)
+
 function extract_common_flags {
     nix --help | sed -E \
                         -e "/^Common flags:/,/^$/\!d" \
@@ -33,4 +57,5 @@ function extract_flags {
 }
 
 _arguments -s \
-           :'Command':extract_commands
+           :'Command':extract_commands \
+           $common_flags
