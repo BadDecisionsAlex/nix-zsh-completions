@@ -16,6 +16,7 @@ _nix_systems () {
 # Completion function to select an angle-bracket expression from the nix path
 # TODO: Generate from NIX_PATH
 #           1. Fetch names before the = sign like in nixpkgs=/some/path/
+#               CONTRIBUTION:`local -a fromNP;fromNP=(${${(M)${(@s/:/)NIX_PATH}#*=}%=});`
 #           2. Complete files in /some/path for expressions like <nixpkgs/pkgs/...>
 _nix_shortcuts () {
     _values shortcuts "<nixpkgs>" "<nixos>"
